@@ -114,6 +114,10 @@ def save_persona(user_id,session_id,persona,llm_confidence,parameter_score, para
 #         print(f"❌ Error: {e}")
 
 
+origins = [
+    "http://localhost:3000",  # local dev
+    "https://assessment-chatbot-nu.vercel.app/"  # your deployed vercel frontend URL
+]
 
 # Enable CORS for frontend integration
 app.add_middleware(
