@@ -338,6 +338,8 @@ Be kind and helpful.
 
 Never ask the user to self assess based on any scale. Your only task is to continue the flow of conversation, guiding the flow towards the required trait to assess.
 
+Always ask one question at a time.
+
 {assessment_information}
 
 ONGOING MESSAGE THREAD:
@@ -668,7 +670,7 @@ Your task is to synthesize this information into a **concise, structured financi
 1. **Financial Persona Summary**:  
    - Provide a high-level description of the user’s financial thinking style, habits, tendencies, and mindset based on the dialogue so far.  
    - Avoid generic statements—anchor your conclusions in *evidence from the conversation*, including concrete behaviors or attitudes the user expressed.
-
+   
 2. **Strengths**:  
    - Clearly enumerate what financial strengths the user has (e.g., planning, long-term thinking, impulse control, flexibility).
    - Explain *why* these are strengths, backing it with references to the user's statements or behavior patterns.
@@ -688,6 +690,7 @@ Your task is to synthesize this information into a **concise, structured financi
    IMPORTANT: - Do not comment about the risk seeking ability, or reaction to external events as strength or weakness.
 
 **Output Style Guide**:
+- Knowledge on each trait should be demonstrated for Summary and Strengths/Weaknesses/SuggestionForImprovement sections.
 - Be concise but information-rich.
 - Avoid vague praise or platitudes.
 - Each section should be **clearly titled**, e.g., `Strengths`, `Weaknesses`, etc.

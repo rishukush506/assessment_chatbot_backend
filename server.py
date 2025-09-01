@@ -7,10 +7,12 @@ import uvicorn
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from pymongo import MongoClient, ReturnDocument
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import uuid
 import dotenv
 import json
 import os
+
 
 
 
@@ -25,9 +27,13 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI,tls=True, tlsAllowInvalidCertificates=True)
 
 db = client["chatbot_db"]
+# Production changes
 messages = db["messages_user_testing"]
 counters = db["counters_user_testing"]
 persona_collection=db["persona_user_testing"]
+# messages = db["messages"]
+# counters = db["counters"]
+# persona_collection=db["persona"]
 
 def generate_user_id():
     counter = counters.find_one_and_update(
@@ -66,7 +72,7 @@ def save_message(user_id,session_id, user_res, ai_res,current_priority,llm_confi
             "llm_confidence":json.dumps(llm_confidence),
             "parameter_rationale":json.dumps(parameter_rationale),
 
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": datetime.now(tz=ZoneInfo('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
         })
         print("Message Saved")
     except Exception as e:
@@ -75,24 +81,23 @@ def save_message(user_id,session_id, user_res, ai_res,current_priority,llm_confi
             status_code=500, detail=f"Failed to save in database: {str(e)}")
 
 
-def save_persona(user_id,session_id,persona,llm_confidence,parameter_score, parameter_rationale):
-
+def save_persona(user_id,session_id,avg_score,persona,llm_confidence,parameter_score, parameter_rationale):
     try:
         persona_collection.insert_one({
             "user_id": user_id,
             "session_id": session_id,
             "persona":persona,
+            "average_score":json.dumps(avg_score),
             "parameter_score":json.dumps(parameter_score),
             "llm_confidence":json.dumps(llm_confidence),
             "parameter_rationale":json.dumps(parameter_rationale),
-
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": datetime.now(tz=ZoneInfo('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
         })
         print("Persona Saved")
     except Exception as e:
-        # print(e)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to save in database: {str(e)}")
+        print(e)
+        # raise HTTPException(
+        #     status_code=500, detail=f"Failed to save in database: {str(e)}")
 
 
 # SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
@@ -394,30 +399,72 @@ async def get_persona_endpoint(request: StateRequest):
         # )
         score={
             "self_control_score"  : current_state['self_control_score'],
-            "preparedness_score "  : current_state['preparedness_score'],
-            "information_seeking_score ":current_state['information_seeking_score'],
-            "risk_seeking_score "   :current_state['risk_seeking_score'],
-            "awareness_score  "  :current_state['awareness_score'],
-            "reaction_to_external_events_score "  : current_state['reaction_to_external_events_score']
+            "preparedness_score"  : current_state['preparedness_score'],
+            "information_seeking_score":current_state['information_seeking_score'],
+            "risk_seeking_score"   :current_state['risk_seeking_score'],
+            "awareness_score"  :current_state['awareness_score'],
+            "reaction_to_external_events_score"  : current_state['reaction_to_external_events_score']
         }
 
         confidence={
-            "self_control_confidence  ":  current_state['self_control_confidence'],
-            "preparedness_confidence   ": current_state['preparedness_confidence'],
-            "information_seeking_confidence ": current_state['information_seeking_confidence'],
-            "risk_seeking_confidence    ":current_state['risk_seeking_confidence'],
-            "awareness_confidence    ":current_state['awareness_confidence'],
-            "reaction_to_external_events_confidence   ": current_state['reaction_to_external_events_confidence']
+            "self_control_confidence":  current_state['self_control_confidence'],
+            "preparedness_confidence": current_state['preparedness_confidence'],
+            "information_seeking_confidence": current_state['information_seeking_confidence'],
+            "risk_seeking_confidence":current_state['risk_seeking_confidence'],
+            "awareness_confidence":current_state['awareness_confidence'],
+            "reaction_to_external_events_confidence": current_state['reaction_to_external_events_confidence']
         }
 
         rationale={
-            "self_control_rationale  ":  current_state['self_control_rationale'],
-            "preparedness_rationale   ": current_state['preparedness_rationale'],
-            "information_seeking_rationale ": current_state['information_seeking_rationale'],
-            "risk_seeking_rationale    ":current_state['risk_seeking_rationale'],
-            "awareness_rationale    ":current_state['awareness_rationale'],
-            "reaction_to_external_events_rationale   ": current_state['reaction_to_external_events_rationale']
+            "self_control_rationale":  current_state['self_control_rationale'],
+            "preparedness_rationale": current_state['preparedness_rationale'],
+            "information_seeking_rationale": current_state['information_seeking_rationale'],
+            "risk_seeking_rationale":current_state['risk_seeking_rationale'],
+            "awareness_rationale":current_state['awareness_rationale'],
+            "reaction_to_external_events_rationale": current_state['reaction_to_external_events_rationale']
         }
+
+        avg_score={
+            # "avg_self_control_score":avg_self_control_score,
+            # "avg_preparedness_score":avg_preparedness_score,
+            # "avg_information_seeking_score":avg_information_seeking_score,
+            # "avg_risk_seeking_score":avg_risk_seeking_score,
+            # "avg_awareness_score":avg_awareness_score,
+            # "avg_reaction_to_external_events_score":avg_reaction_to_external_events_score
+        }
+
+        if len(score["self_control_score"])!=0:
+            avg_score["avg_self_control_score"]= sum(score["self_control_score"][i]*confidence["self_control_confidence"][i] for i in range(len(score["self_control_score"])))/sum(confidence["self_control_confidence"])
+        else:
+            avg_score["avg_self_control_score"]="Not assessed"
+
+        if len(score["preparedness_score"])!=0:
+            avg_score["avg_preparedness_score"]=sum(score["preparedness_score"][i]*confidence["preparedness_confidence"][i] for i in range(len(score["preparedness_score"]))) /sum(confidence["preparedness_confidence"])
+        else:
+            avg_score["avg_preparedness_score"]="Not assessed"
+        
+        if len(score["information_seeking_score"])!=0:
+            avg_score["avg_information_seeking_score"]=sum(score["information_seeking_score"][i]*confidence["information_seeking_confidence"][i] for i in range(len(score["information_seeking_score"]))) /sum(confidence["information_seeking_confidence"])
+        else:
+            avg_score["avg_information_seeking_score"]="Not assessed"
+
+        if len(score["risk_seeking_score"])!=0:
+            avg_score["avg_risk_seeking_score"]=sum(score["risk_seeking_score"][i]*confidence["risk_seeking_confidence"][i] for i in range(len(score["risk_seeking_score"]))) /sum(confidence["risk_seeking_confidence"])
+        else:
+            avg_score["avg_risk_seeking_score"]="Not assessed"
+
+        if len(score["awareness_score"])!=0:
+            avg_score["avg_awareness_score"]=sum(score["awareness_score"][i]*confidence["awareness_confidence"][i] for i in range(len(score["awareness_score"]))) /sum(confidence["awareness_confidence"])
+        else:
+            avg_score["avg_awareness_score"]="Not assessed"
+
+        if len(score["reaction_to_external_events_score"])!=0:
+            avg_score["avg_reaction_to_external_events_score"]=sum(score["reaction_to_external_events_score"][i]*confidence["reaction_to_external_events_confidence"][i] for i in range(len(score["reaction_to_external_events_score"]))) /sum(confidence["reaction_to_external_events_confidence"])
+        else:
+            avg_score["avg_reaction_to_external_events_score"]="Not assessed"
+        
+        print("avg_score")
+        print(avg_score)
 
         save_persona(
             user_id=user_id,
@@ -425,6 +472,7 @@ async def get_persona_endpoint(request: StateRequest):
             persona=response_content,
             llm_confidence=confidence,
             parameter_score=score,
+            avg_score=avg_score,
             parameter_rationale=rationale
         )
 
@@ -434,8 +482,9 @@ async def get_persona_endpoint(request: StateRequest):
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error processing persona: {str(e)}")
+        print(e)
+        # raise HTTPException(
+        #     status_code=500, detail=f"Error processing persona: {str(e)}")
 
 
 @app.get("/health")
