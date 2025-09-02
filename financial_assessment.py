@@ -108,7 +108,7 @@ DEFINITIONS = {
         "Financial awareness refers to an individual's understanding of key financial concepts such as saving strategies, risk-return tradeoffs, inflation effects, and investment diversification. "
         "It reflects the extent to which a person is financially literate and can make informed decisions by anticipating outcomes based on available information. "
         "Assessment involves evaluating knowledge and awareness of core financial principles and the ability to apply them in practical scenarios."
-        "Elicit response about awareness by asking questions whether and how much they understand about these principles."
+        "Elicit response about awareness by asking questions whether and how much they understand about these principles. Try to gauge their understanding on both objective and subjective awareness."
     ),
     "self_control": (
         "Self-control in financial settings denotes the ability to regulate impulsive spending, delay gratification, and make deliberate financial choices despite emotional triggers or external temptations. "
@@ -119,6 +119,7 @@ DEFINITIONS = {
         "Financial preparedness captures the degree to which an individual is equipped to handle unexpected financial shocks, such as income loss or emergencies, through planning and resource allocation. "
         "It encompasses both objective readiness (e.g., emergency funds) and subjective confidence in coping with financial adversity. "
         "Assessment centers on resource buffers, temporal self-sufficiency, and perceived resilience toward future uncertainties."
+        "Elicit response about preparedness by asking questions about their confidence in handling financial emergencies, their savings for such events. Insurance coverage can also be a good indicator of preparedness."
     ),
     "information_seeking": (
         "Information seeking refers to the proactive behavior of acquiring relevant data, advice, or insights prior to making financial decisions. "
@@ -691,7 +692,7 @@ Your task is to synthesize this information into a **concise, structured financi
 
 **Output Style Guide**:
 - Knowledge on each trait should be demonstrated for Summary and Strengths/Weaknesses/SuggestionForImprovement sections.
-- Be concise but information-rich.
+- Be concise but information-rich. 
 - Avoid vague praise or platitudes.
 - Each section should be **clearly titled**, e.g., `Strengths`, `Weaknesses`, etc.
 - Write in professional, psychologically grounded language, with clinical clarity and confidence.
