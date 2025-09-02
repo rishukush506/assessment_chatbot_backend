@@ -108,7 +108,7 @@ DEFINITIONS = {
         "Financial awareness refers to an individual's understanding of key financial concepts such as saving strategies, risk-return tradeoffs, inflation effects, and investment diversification. "
         "It reflects the extent to which a person is financially literate and can make informed decisions by anticipating outcomes based on available information. "
         "Assessment involves evaluating knowledge and awareness of core financial principles and the ability to apply them in practical scenarios."
-        "Elicit response about awareness by asking questions whether and how much they understand about these principles. Try to gauge their understanding on both objective and subjective awareness."
+        "Elicit response about awareness by asking questions whether and how much they understand about these principles. Understanding on how to invest and where to invest is a good indicator of financial awareness. Try to gauge their understanding on both objective and subjective awareness."
     ),
     "self_control": (
         "Self-control in financial settings denotes the ability to regulate impulsive spending, delay gratification, and make deliberate financial choices despite emotional triggers or external temptations. "
