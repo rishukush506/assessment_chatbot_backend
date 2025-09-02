@@ -144,7 +144,7 @@ TRAITS = ["awareness", "self_control", "preparedness",
 PRIORITY_TRAITS = {value: index+1 for index,
                    value in enumerate(TRAITS)}  # Trait priority mapping
 # Maximum questions per trait [keep in mind the starting index is 0 for most traits a-2 for awareness, modify in LOCAL_STATE and EMPTY_STATE]
-MAX_QUESTIONS = 2
+MAX_QUESTIONS = 3
 CONFIDENCE_THRESHOLD = 7  # Minimum confidence score to move to next trait
 
 
