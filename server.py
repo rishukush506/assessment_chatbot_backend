@@ -15,7 +15,6 @@ import os
 
 
 
-
 # Import the financial assessment components
 from financial_assessment import assessment_graph, EMPTY_STATE, generate_persona
 
@@ -95,9 +94,9 @@ def save_persona(user_id,session_id,avg_score,persona,llm_confidence,parameter_s
         })
         print("Persona Saved")
     except Exception as e:
-        print(e)
-        # raise HTTPException(
-        #     status_code=500, detail=f"Failed to save in database: {str(e)}")
+        # print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save in database: {str(e)}")
 
 
 # SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
@@ -211,6 +210,51 @@ def prepare_state_for_graph(state: Dict[str, Any]) -> Dict[str, Any]:
     return prepared_state
 
 
+def weighted_average(score,confidence):
+        avg_score={
+            # "avg_self_control_score":avg_self_control_score,
+            # "avg_preparedness_score":avg_preparedness_score,
+            # "avg_information_seeking_score":avg_information_seeking_score,
+            # "avg_risk_seeking_score":avg_risk_seeking_score,
+            # "avg_awareness_score":avg_awareness_score,
+            # "avg_reaction_to_external_events_score":avg_reaction_to_external_events_score
+        }
+
+        if len(score["self_control_score"])!=0:
+            avg_score["avg_self_control_score"]= sum(score["self_control_score"][i]*confidence["self_control_confidence"][i] for i in range(len(score["self_control_score"])))/sum(confidence["self_control_confidence"])
+        else:
+            avg_score["avg_self_control_score"]="Not assessed"
+
+        if len(score["preparedness_score"])!=0:
+            avg_score["avg_preparedness_score"]=sum(score["preparedness_score"][i]*confidence["preparedness_confidence"][i] for i in range(len(score["preparedness_score"]))) /sum(confidence["preparedness_confidence"])
+        else:
+            avg_score["avg_preparedness_score"]="Not assessed"
+        
+        if len(score["information_seeking_score"])!=0:
+            avg_score["avg_information_seeking_score"]=sum(score["information_seeking_score"][i]*confidence["information_seeking_confidence"][i] for i in range(len(score["information_seeking_score"]))) /sum(confidence["information_seeking_confidence"])
+        else:
+            avg_score["avg_information_seeking_score"]="Not assessed"
+
+        if len(score["risk_seeking_score"])!=0:
+            avg_score["avg_risk_seeking_score"]=sum(score["risk_seeking_score"][i]*confidence["risk_seeking_confidence"][i] for i in range(len(score["risk_seeking_score"]))) /sum(confidence["risk_seeking_confidence"])
+        else:
+            avg_score["avg_risk_seeking_score"]="Not assessed"
+
+        if len(score["awareness_score"])!=0:
+            avg_score["avg_awareness_score"]=sum(score["awareness_score"][i]*confidence["awareness_confidence"][i] for i in range(len(score["awareness_score"]))) /sum(confidence["awareness_confidence"])
+        else:
+            avg_score["avg_awareness_score"]="Not assessed"
+
+        if len(score["reaction_to_external_events_score"])!=0:
+            avg_score["avg_reaction_to_external_events_score"]=sum(score["reaction_to_external_events_score"][i]*confidence["reaction_to_external_events_confidence"][i] for i in range(len(score["reaction_to_external_events_score"]))) /sum(confidence["reaction_to_external_events_confidence"])
+        else:
+            avg_score["avg_reaction_to_external_events_score"]="Not assessed"
+        
+        print("avg_score")
+        print(avg_score)
+
+        return avg_score
+
 # API Endpoints
 
 
@@ -312,10 +356,12 @@ async def chat(request: ChatRequest):
                 parameter_rationale=rationale
             )
         else:
+            weighted_average_score=weighted_average(score,confidence)
             save_persona(
             user_id=user_id,
             session_id=session_id,
             persona=response_content,
+            avg_score=weighted_average_score,
             llm_confidence=confidence,
             parameter_score=score,
             parameter_rationale=rationale
@@ -330,7 +376,7 @@ async def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error processing chat: {str(e)}"
-            )
+        )
 
 
 @app.post("/process-state", response_model=StateResponse)
@@ -424,47 +470,7 @@ async def get_persona_endpoint(request: StateRequest):
             "reaction_to_external_events_rationale": current_state['reaction_to_external_events_rationale']
         }
 
-        avg_score={
-            # "avg_self_control_score":avg_self_control_score,
-            # "avg_preparedness_score":avg_preparedness_score,
-            # "avg_information_seeking_score":avg_information_seeking_score,
-            # "avg_risk_seeking_score":avg_risk_seeking_score,
-            # "avg_awareness_score":avg_awareness_score,
-            # "avg_reaction_to_external_events_score":avg_reaction_to_external_events_score
-        }
-
-        if len(score["self_control_score"])!=0:
-            avg_score["avg_self_control_score"]= sum(score["self_control_score"][i]*confidence["self_control_confidence"][i] for i in range(len(score["self_control_score"])))/sum(confidence["self_control_confidence"])
-        else:
-            avg_score["avg_self_control_score"]="Not assessed"
-
-        if len(score["preparedness_score"])!=0:
-            avg_score["avg_preparedness_score"]=sum(score["preparedness_score"][i]*confidence["preparedness_confidence"][i] for i in range(len(score["preparedness_score"]))) /sum(confidence["preparedness_confidence"])
-        else:
-            avg_score["avg_preparedness_score"]="Not assessed"
-        
-        if len(score["information_seeking_score"])!=0:
-            avg_score["avg_information_seeking_score"]=sum(score["information_seeking_score"][i]*confidence["information_seeking_confidence"][i] for i in range(len(score["information_seeking_score"]))) /sum(confidence["information_seeking_confidence"])
-        else:
-            avg_score["avg_information_seeking_score"]="Not assessed"
-
-        if len(score["risk_seeking_score"])!=0:
-            avg_score["avg_risk_seeking_score"]=sum(score["risk_seeking_score"][i]*confidence["risk_seeking_confidence"][i] for i in range(len(score["risk_seeking_score"]))) /sum(confidence["risk_seeking_confidence"])
-        else:
-            avg_score["avg_risk_seeking_score"]="Not assessed"
-
-        if len(score["awareness_score"])!=0:
-            avg_score["avg_awareness_score"]=sum(score["awareness_score"][i]*confidence["awareness_confidence"][i] for i in range(len(score["awareness_score"]))) /sum(confidence["awareness_confidence"])
-        else:
-            avg_score["avg_awareness_score"]="Not assessed"
-
-        if len(score["reaction_to_external_events_score"])!=0:
-            avg_score["avg_reaction_to_external_events_score"]=sum(score["reaction_to_external_events_score"][i]*confidence["reaction_to_external_events_confidence"][i] for i in range(len(score["reaction_to_external_events_score"]))) /sum(confidence["reaction_to_external_events_confidence"])
-        else:
-            avg_score["avg_reaction_to_external_events_score"]="Not assessed"
-        
-        print("avg_score")
-        print(avg_score)
+        avg_score=weighted_average(score,confidence)
 
         save_persona(
             user_id=user_id,
