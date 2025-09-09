@@ -300,25 +300,33 @@ def prioritize_trait(state: AgentState):
     print("prioritizing trait to assess\n")
     current_priority = state["current_priority"]
     current_iteration = state["current_iteration"]
-
+    # print(f"current state:\n")
     # Calculate average confidence for current trait
     confidence = sum(state[f"{current_priority}_confidence"])/len(state[f"{current_priority}_confidence"]
                                                                   ) if state[f"{current_priority}_confidence"] and len(state[f"{current_priority}_confidence"]) > 0 else 0
-    print(f"current average confidence: {confidence}")
-
+    # print(f"current average confidence: {confidence}")
+    # print(f"MAX_QUESTIONS: {MAX_QUESTIONS}")
+    # print(f"current iteration: {current_iteration}")
+    # print(f"current priority: {current_priority}")
+    # print(f"TRAITS: {TRAITS}")
     # Check if assessment is complete
     if current_iteration >= MAX_QUESTIONS and current_priority == TRAITS[-1]:
+        print("Assessment complete, generating persona.")
         return {"current_priority": "persona", "continue_conversation": False}
     # Move to next trait if confidence threshold met
-    elif confidence >= CONFIDENCE_THRESHOLD and current_iteration > 1:
+    elif confidence >= CONFIDENCE_THRESHOLD and current_iteration > MAX_QUESTIONS -1:
+        print("Moving to next trait based on confidence.")
         return {"current_priority": TRAITS[PRIORITY_TRAITS[current_priority]], "assessment_type": "conversation_based", "current_iteration": 0}
     # Switch to option-based assessment if confidence low
     elif current_iteration == MAX_QUESTIONS - 1 and confidence < CONFIDENCE_THRESHOLD:
+        print("Switching to option-based assessment for current trait.")
         return {"assessment_type": "option_based", "current_iteration": MAX_QUESTIONS}
     # Move to next trait after max questions
     elif current_iteration == MAX_QUESTIONS and current_priority != TRAITS[-1]:
+        print("Max questions reached, moving to next trait.")
         return {"current_priority": TRAITS[PRIORITY_TRAITS[current_priority]], "assessment_type": "conversation_based", "current_iteration": 0}
     else:
+        print("Continuing with current trait.")
         return {"current_iteration": current_iteration + 1}
 
 

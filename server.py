@@ -75,7 +75,7 @@ def save_message(user_id,session_id, user_res, ai_res,current_priority,llm_confi
         })
         print("Message Saved")
     except Exception as e:
-        # print(e)
+        print(e)
         raise HTTPException(
             status_code=500, detail=f"Failed to save in database: {str(e)}")
 
@@ -98,7 +98,7 @@ def save_persona(user_id,session_id,persona_label,avg_score,persona,llm_confiden
         })
         print("Persona Saved")
     except Exception as e:
-        # print(e)
+        print(e)
         raise HTTPException(
             status_code=500, detail=f"Failed to save in database: {str(e)}")
 
@@ -431,33 +431,20 @@ async def chat(request: ChatRequest):
 
         current_priority=serialized_state["current_priority"]
 
-        score={
-            "self_control_score"  : serialized_state['self_control_score'],
-            "preparedness_score"  : serialized_state['preparedness_score'],
-            "information_seeking_score":serialized_state['information_seeking_score'],
-            "risk_seeking_score"   :serialized_state['risk_seeking_score'],
-            "awareness_score"  :serialized_state['awareness_score'],
-            "reaction_to_external_events_score"  : serialized_state['reaction_to_external_events_score']
-        }
+        list_of_traits=["self_control","preparedness","information_seeking","risk_seeking","awareness","reaction_to_external_events"]
 
-        confidence={
-            "self_control_confidence":  serialized_state['self_control_confidence'],
-            "preparedness_confidence":serialized_state['preparedness_confidence'],
-            "information_seeking_confidence": serialized_state['information_seeking_confidence'],
-            "risk_seeking_confidence":serialized_state['risk_seeking_confidence'],
-            "awareness_confidence":serialized_state['awareness_confidence'],
-            "reaction_to_external_events_confidence": serialized_state['reaction_to_external_events_confidence']
-        }
+        score={}
+        confidence={}
+        rationale={}
 
-        rationale={
-            "self_control_rationale":  serialized_state['self_control_rationale'],
-            "preparedness_rationale": serialized_state['preparedness_rationale'],
-            "information_seeking_rationale": serialized_state['information_seeking_rationale'],
-            "risk_seeking_rationale":serialized_state['risk_seeking_rationale'],
-            "awareness_rationale":serialized_state['awareness_rationale'],
-            "reaction_to_external_events_rationale": serialized_state['reaction_to_external_events_rationale']
-        }
+        for trait in list_of_traits:
+            score_key=f"{trait}_score"
+            confidence_key=f"{trait}_confidence"
+            rationale_key=f"{trait}_rationale"
 
+            score[score_key]=serialized_state[score_key]
+            confidence[confidence_key]=serialized_state[confidence_key]
+            rationale[rationale_key]=serialized_state[rationale_key]
 
         ## Adding Persona label in state
         avg_score=weighted_average(score,confidence)
@@ -482,15 +469,15 @@ async def chat(request: ChatRequest):
             )
         else:
             save_persona(
-            user_id=user_id,
-            session_id=session_id,
-            persona_label=persona_label,
-            persona=response_content,
-            avg_score=avg_score,
-            llm_confidence=confidence,
-            parameter_score=score,
-            parameter_rationale=rationale
-        )
+                user_id=user_id,
+                session_id=session_id,
+                persona_label=persona_label,
+                persona=response_content,
+                avg_score=avg_score,
+                llm_confidence=confidence,
+                parameter_score=score,
+                parameter_rationale=rationale
+            )
 
         return ChatResponse(
             response=response_content,
@@ -499,7 +486,7 @@ async def chat(request: ChatRequest):
         )
 
     except Exception as e:
-        # print(e)
+        print(e)
         raise HTTPException(
             status_code=500, detail=f"Error processing chat: {str(e)}"
         )
@@ -524,6 +511,7 @@ async def process_state(request: StateRequest):
         )
 
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=500, detail=f"Error processing state: {str(e)}")
 
@@ -562,32 +550,20 @@ async def get_persona_endpoint(request: StateRequest):
         print("response_content")
         print(response_content)
 
-        score={
-            "self_control_score"  : current_state['self_control_score'],
-            "preparedness_score"  : current_state['preparedness_score'],
-            "information_seeking_score":current_state['information_seeking_score'],
-            "risk_seeking_score"   :current_state['risk_seeking_score'],
-            "awareness_score"  :current_state['awareness_score'],
-            "reaction_to_external_events_score"  : current_state['reaction_to_external_events_score']
-        }
+        list_of_traits=["self_control","preparedness","information_seeking","risk_seeking","awareness","reaction_to_external_events"]
 
-        confidence={
-            "self_control_confidence":  current_state['self_control_confidence'],
-            "preparedness_confidence": current_state['preparedness_confidence'],
-            "information_seeking_confidence": current_state['information_seeking_confidence'],
-            "risk_seeking_confidence":current_state['risk_seeking_confidence'],
-            "awareness_confidence":current_state['awareness_confidence'],
-            "reaction_to_external_events_confidence": current_state['reaction_to_external_events_confidence']
-        }
+        score={}
+        confidence={}
+        rationale={}
 
-        rationale={
-            "self_control_rationale":  current_state['self_control_rationale'],
-            "preparedness_rationale": current_state['preparedness_rationale'],
-            "information_seeking_rationale": current_state['information_seeking_rationale'],
-            "risk_seeking_rationale":current_state['risk_seeking_rationale'],
-            "awareness_rationale":current_state['awareness_rationale'],
-            "reaction_to_external_events_rationale": current_state['reaction_to_external_events_rationale']
-        }
+        for trait in list_of_traits:
+            score_key=f"{trait}_score"
+            confidence_key=f"{trait}_confidence"
+            rationale_key=f"{trait}_rationale"
+
+            score[score_key]=current_state[score_key]
+            confidence[confidence_key]=current_state[confidence_key]
+            rationale[rationale_key]=current_state[rationale_key]
 
         avg_score=weighted_average(score,confidence)
         persona_label=generate_persona_label(avg_score)
@@ -609,7 +585,7 @@ async def get_persona_endpoint(request: StateRequest):
         }
 
     except Exception as e:
-        # print(e)
+        print(e)
         raise HTTPException(
             status_code=500, detail=f"Error processing persona: {str(e)}")
 
