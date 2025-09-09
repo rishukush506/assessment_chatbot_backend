@@ -192,6 +192,7 @@ class AgentState(TypedDict):
     trait_evaluation: Literal["awareness", "self_control", "preparedness",
                               "information_seeking", "risk_seeking", "reaction_to_external_events"]
     persona: str
+    persona_label: str
     continue_conversation: bool
 
 
@@ -233,6 +234,7 @@ LOCAL_STATE: AgentState = {
     "redirect_path": "evaluator",
     "trait_evaluation": "awareness",
     "persona": "",
+    "persona_label": "Not Assessed",
     "continue_conversation": True
     # "messages": []
 }
@@ -274,6 +276,7 @@ EMPTY_STATE: AgentState = {
     "redirect_path": "evaluator",
     "trait_evaluation": "awareness",
     "persona": "",
+    "persona_label": "Not Assessed",
     "continue_conversation": True
     # "messages": []
 }
@@ -665,6 +668,7 @@ Definitions:
 You will be given:
 - A list of previous messages in a conversation, including both the user's dialogue and any prior assistant responses.
 - A rationale field that summarizes the underlying behavioral or financial reasoning inferred from the user's responses.
+- A persona label to display to user.
 
 Your task is to synthesize this information into a **concise, structured financial persona summary** that includes the following sections:
 
@@ -691,6 +695,7 @@ Your task is to synthesize this information into a **concise, structured financi
    IMPORTANT: - Do not comment about the risk seeking ability, or reaction to external events as strength or weakness.
 
 **Output Style Guide**:
+- Keep persona label at the top in the format: "Persona Label":<Label>. If the persona label is "Not Assessed", do not include it in the output.
 - Knowledge on each trait should be demonstrated for Summary and Strengths/Weaknesses/SuggestionForImprovement sections.
 - Be concise but information-rich. 
 - Avoid vague praise or platitudes.
@@ -701,6 +706,9 @@ Your task is to synthesize this information into a **concise, structured financi
 Ongoing Message Thread: 
 {messages}
 
+Persona Label to Display: 
+{persona_label}
+
 Extracted Sentences:
 {extracted_sentences}
 
@@ -708,7 +716,7 @@ Extracted Rationales:
 {extracted_rationales}
 """
     formatted_system_prompt = system_prompt.format(definitions=DEFINITIONS, messages=format_messages_for_prompt(state["messages"]), extracted_sentences=[
-                                                   state[f"{trait}_sentences"] for trait in TRAITS], extracted_rationales=[state[f"{trait}_rationale"] for trait in TRAITS])
+                                                   state[f"{trait}_sentences"] for trait in TRAITS], extracted_rationales=[state[f"{trait}_rationale"] for trait in TRAITS], persona_label=state["persona_label"])
 
     response = generator_model.invoke(formatted_system_prompt)
     return response.content

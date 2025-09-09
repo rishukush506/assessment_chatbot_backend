@@ -80,12 +80,16 @@ def save_message(user_id,session_id, user_res, ai_res,current_priority,llm_confi
             status_code=500, detail=f"Failed to save in database: {str(e)}")
 
 
-def save_persona(user_id,session_id,avg_score,persona,llm_confidence,parameter_score, parameter_rationale):
+def save_persona(user_id,session_id,persona_label,avg_score,persona,llm_confidence,parameter_score, parameter_rationale):
     try:
+
+        print("persona_label")
+        print(persona_label)
         persona_collection.insert_one({
             "user_id": user_id,
             "session_id": session_id,
             "persona":persona,
+            "persona_label":persona_label,
             "average_score":json.dumps(avg_score),
             "parameter_score":json.dumps(parameter_score),
             "llm_confidence":json.dumps(llm_confidence),
@@ -210,50 +214,159 @@ def prepare_state_for_graph(state: Dict[str, Any]) -> Dict[str, Any]:
     return prepared_state
 
 
-def weighted_average(score,confidence):
-        avg_score={
-            # "avg_self_control_score":avg_self_control_score,
-            # "avg_preparedness_score":avg_preparedness_score,
-            # "avg_information_seeking_score":avg_information_seeking_score,
-            # "avg_risk_seeking_score":avg_risk_seeking_score,
-            # "avg_awareness_score":avg_awareness_score,
-            # "avg_reaction_to_external_events_score":avg_reaction_to_external_events_score
-        }
+def weighted_average(score: dict, confidence: dict) -> dict:
+    """Compute weighted averages."""
+    avg_score = {}
 
-        if len(score["self_control_score"])!=0:
-            avg_score["avg_self_control_score"]= sum(score["self_control_score"][i]*confidence["self_control_confidence"][i] for i in range(len(score["self_control_score"])))/sum(confidence["self_control_confidence"])
-        else:
-            avg_score["avg_self_control_score"]="Not assessed"
+    metrics = [
+        ("self_control_score", "self_control_confidence"),
+        ("preparedness_score", "preparedness_confidence"),
+        ("information_seeking_score", "information_seeking_confidence"),
+        ("risk_seeking_score", "risk_seeking_confidence"),
+        ("awareness_score", "awareness_confidence"),
+        ("reaction_to_external_events_score", "reaction_to_external_events_confidence"),
+    ]
 
-        if len(score["preparedness_score"])!=0:
-            avg_score["avg_preparedness_score"]=sum(score["preparedness_score"][i]*confidence["preparedness_confidence"][i] for i in range(len(score["preparedness_score"]))) /sum(confidence["preparedness_confidence"])
+    for score_key, conf_key in metrics:
+        s_list = score.get(score_key, [])
+        c_list = confidence.get(conf_key, [])
+
+        # print("Processing:", score_key, conf_key)
+        # print("s_list:", s_list)
+        # print("c_list:", c_list)
+
+        # Only compute if both score and confidence are valid lists with matching length
+        if s_list and c_list and len(s_list) == len(c_list):
+            denom = sum(c_list)
+            if denom > 0:
+                weighted_sum = sum(s * c for s, c in zip(s_list, c_list))
+                # print("weighted_sum:", weighted_sum)
+                # print("score_key:", score_key)
+
+                avg_score[f"avg_{score_key}"] = weighted_sum / denom
+                # print("avg_score[f'avg_{score_key}']:", avg_score[f"avg_{score_key}"])
+            else:
+                avg_score[f"avg_{score_key}"] = "Not assessed (zero confidence)"
         else:
-            avg_score["avg_preparedness_score"]="Not assessed"
+            avg_score[f"avg_{score_key}"] = "Not assessed"
+
+    # print("avg_score:", avg_score)
+    return avg_score
+
+
+
+def generate_persona_label(avg_score):
+
+    print("Generate Persona Label Function Called")
+
+    Awareness=""
+    Self_Control=""
+    Risk_Propensity=""
+
+    if avg_score["avg_awareness_score"]=="Not assessed" or avg_score["avg_self_control_score"]=="Not assessed" or avg_score["avg_risk_seeking_score"]=="Not assessed":
+        return "Not Assessed"
+
+    for key, value in avg_score.items():
         
-        if len(score["information_seeking_score"])!=0:
-            avg_score["avg_information_seeking_score"]=sum(score["information_seeking_score"][i]*confidence["information_seeking_confidence"][i] for i in range(len(score["information_seeking_score"]))) /sum(confidence["information_seeking_confidence"])
-        else:
-            avg_score["avg_information_seeking_score"]="Not assessed"
+        if key=="avg_awareness_score":
+            if value<2:
+                Awareness="Basic awareness"
+            elif value<3 and value>=2:
+                Awareness="Developing Comprehension"
+            elif value <4 and value>=3:
+                Awareness= "Reasonable Understanding"
+            else:
+                Awareness="High"
 
-        if len(score["risk_seeking_score"])!=0:
-            avg_score["avg_risk_seeking_score"]=sum(score["risk_seeking_score"][i]*confidence["risk_seeking_confidence"][i] for i in range(len(score["risk_seeking_score"]))) /sum(confidence["risk_seeking_confidence"])
-        else:
-            avg_score["avg_risk_seeking_score"]="Not assessed"
+        elif key=="avg_self_control_score":
+            if value<2:
+                Self_Control="Limited Restraint"
+            elif value<3 and value>=2:
+                Self_Control="Moderate Restraint"
+            elif value<4 and value>=3:
+                Self_Control="Reasonable Restraint"
+            else:
+                Self_Control="High"
 
-        if len(score["awareness_score"])!=0:
-            avg_score["avg_awareness_score"]=sum(score["awareness_score"][i]*confidence["awareness_confidence"][i] for i in range(len(score["awareness_score"]))) /sum(confidence["awareness_confidence"])
-        else:
-            avg_score["avg_awareness_score"]="Not assessed"
+        elif key=="avg_risk_seeking_score":
+            if value<2.4:
+                Risk_Propensity="Cautious"
+            elif value<3.4 and value>=2.4:
+                Risk_Propensity="Calculative"
+            else:
+                Risk_Propensity="Chance-Taking"
 
-        if len(score["reaction_to_external_events_score"])!=0:
-            avg_score["avg_reaction_to_external_events_score"]=sum(score["reaction_to_external_events_score"][i]*confidence["reaction_to_external_events_confidence"][i] for i in range(len(score["reaction_to_external_events_score"]))) /sum(confidence["reaction_to_external_events_confidence"])
-        else:
-            avg_score["avg_reaction_to_external_events_score"]="Not assessed"
+
+    key=(Awareness, Self_Control, Risk_Propensity)
+
+    atire_mapping_dict={
+        ("Basic awareness", "High", "Calculative"): "Calculative-Realist", 
+        ("Basic awareness", "High", "Cautious"): "Cautious-Realist",
+        ("Basic awareness", "High", "Chance-Taking"): "Chance-Taking-Realist",
+
+        ("Basic awareness", "Limited Restraint", "Calculative"): "Calculative-Intuitionist",
+        ("Basic awareness", "Limited Restraint", "Cautious"): "Cautious-Intuitionist",
+        ("Basic awareness", "Limited Restraint", "Chance-Taking"): "Chance-Taking-Intuitionist",
+
+        ("Basic awareness", "Moderate Restraint", "Calculative"): "Calculative-Aspirer",
+        ("Basic awareness", "Moderate Restraint", "Cautious"): "Cautious-Aspirer",
+        ("Basic awareness", "Moderate Restraint", "Chance-Taking"): "Chance-Taking-Aspirer",
         
-        print("avg_score")
-        print(avg_score)
+        ("Basic awareness", "Reasonable Restraint", "Calculative"): "Calculative-Realist",
+        ("Basic awareness", "Reasonable Restraint", "Cautious"): "Cautious-Realist",
+        ("Basic awareness", "Reasonable Restraint", "Chance-Taking"): "Chance-Taking-Realist",
+        
+        ("Developing Comprehension", "High", "Calculative"): "Calculative-Info-Seeker",
+        ("Developing Comprehension", "High", "Cautious"): "Cautious-Info-Seeker",
+        ("Developing Comprehension", "High", "Chance-Taking"): "Chance-Taking-Info-Seeker",
+        
+        ("Developing Comprehension", "Limited Restraint", "Calculative"): "Calculative-Aspirer",
+        ("Developing Comprehension", "Limited Restraint", "Cautious"): "Cautious-Aspirer",
+        ("Developing Comprehension", "Limited Restraint", "Chance-Taking"): "Chance-Taking-Aspirer",
 
-        return avg_score
+        ("Developing Comprehension", "Moderate Restraint", "Calculative"): "Calculative-Aspirer",
+        ("Developing Comprehension", "Moderate Restraint", "Cautious"): "Cautious-Aspirer",
+        ("Developing Comprehension", "Moderate Restraint", "Chance-Taking"): "Chance-Taking-Aspirer",
+        
+        ("Developing Comprehension", "Reasonable Restraint", "Calculative"): "Calculative-Info-Seeker",
+        ("Developing Comprehension", "Reasonable Restraint", "Cautious"): "Cautious-Info-Seeker", 
+        ("Developing Comprehension", "Reasonable Restraint", "Chance-Taking"): "Chance-Taking-Info-Seeker",
+        
+        ("Reasonable Understanding", "High", "Calculative"): "Calculative-Manager",
+        ("Reasonable Understanding", "High", "Cautious"): "Cautious-Manager", 
+        ("Reasonable Understanding", "High", "Chance-Taking"): "Chance-Taking-Manager",
+
+        ("Reasonable Understanding", "Limited Restraint", "Calculative"): "Calculative-Explorer",
+        ("Reasonable Understanding", "Limited Restraint", "Cautious"): "Cautious-Explorer",
+        ("Reasonable Understanding", "Limited Restraint", "Chance-Taking"): "Chance-Taking-Explorer",
+
+        ("Reasonable Understanding", "Moderate Restraint", "Calculative"): "Calculative-Discipline-seeker",
+        ("Reasonable Understanding", "Moderate Restraint", "Cautious"): "Cautious-Discipline-seeker",
+        ("Reasonable Understanding", "Moderate Restraint", "Chance-Taking"): "Chance-Taking-Discipline-seeker",
+
+        ("Reasonable Understanding", "Reasonable Restraint", " Calculative"): "Calculative-Manager", 
+        ("Reasonable Understanding", "Reasonable Restraint", "Cautious"): "Cautious-Manager",
+        ("Reasonable Understanding", "Reasonable Restraint", "Chance-Taking"): "Chance-Taking-Manager",
+
+        ("High", "High", "Calculative"): "Calculative-Strategist",
+        ("High", "High", "Cautious"): "Cautious-Strategist",
+        ("High", "High", "Chance-Taking"): "Chance-Taking-Strategist",
+
+        ("High", "Limited Restraint", "Calculative"): "Calculative-Explorer",
+        ("High", "Limited Restraint", "Cautious"): "Cautious-Explorer",
+        ("High", "Limited Restraint", "Chance-Taking"): "Chance-Taking-Explorer",
+
+        ("High", "Moderate Restraint", "Calculative"): "Calculative-Discipline-seeker",
+        ("High", "Moderate Restraint", "Cautious"): "Cautious-Discipline-seeker",
+        ("High", "Moderate Restraint", "Chance-Taking"): "Chance-Taking-Discipline-seeker",
+
+        ("High", "Reasonable Restraint", "Calculative"): "Calculative-Manager", 
+        ("High", "Reasonable Restraint", "Cautious"): "Cautious-Manager",
+        ("High", "Reasonable Restraint", "Chance-Taking"): "Chance-Taking-Manager"
+    }    
+    persona_label=atire_mapping_dict.get(key, None)
+
+    return persona_label
 
 # API Endpoints
 
@@ -271,6 +384,7 @@ async def chat(request: ChatRequest):
     Main chat endpoint - processes user messages through the assessment graph
     """
     try:
+        print("Chat Request Received:")
 
         # Use provided state or start fresh
         current_state = request.state if request.state else EMPTY_STATE.copy()
@@ -282,14 +396,16 @@ async def chat(request: ChatRequest):
                 updated_state=current_state,
                 status="success"
             ) 
-
+        
         # Convert serialized messages back to LangChain objects
         current_state = prepare_state_for_graph(current_state)
 
         # Add user message to conversation
         current_state["messages"].append(HumanMessage(content=request.message))
 
-        # Process through the assessment workflow
+        print("Current State before assessment graph")
+        print(current_state)
+        
         updated_state = assessment_graph.invoke(current_state)
 
         # Extract the AI's response from the last message
@@ -317,30 +433,39 @@ async def chat(request: ChatRequest):
 
         score={
             "self_control_score"  : serialized_state['self_control_score'],
-            "preparedness_score "  : serialized_state['preparedness_score'],
-            "information_seeking_score ":serialized_state['information_seeking_score'],
-            "risk_seeking_score "   :serialized_state['risk_seeking_score'],
-            "awareness_score  "  :serialized_state['awareness_score'],
-            "reaction_to_external_events_score "  : serialized_state['reaction_to_external_events_score']
+            "preparedness_score"  : serialized_state['preparedness_score'],
+            "information_seeking_score":serialized_state['information_seeking_score'],
+            "risk_seeking_score"   :serialized_state['risk_seeking_score'],
+            "awareness_score"  :serialized_state['awareness_score'],
+            "reaction_to_external_events_score"  : serialized_state['reaction_to_external_events_score']
         }
 
         confidence={
-            "self_control_confidence  ":  serialized_state['self_control_confidence'],
-            "preparedness_confidence   ": serialized_state['preparedness_confidence'],
-            "information_seeking_confidence ": serialized_state['information_seeking_confidence'],
-            "risk_seeking_confidence    ":serialized_state['risk_seeking_confidence'],
-            "awareness_confidence    ":serialized_state['awareness_confidence'],
-            "reaction_to_external_events_confidence   ": serialized_state['reaction_to_external_events_confidence']
+            "self_control_confidence":  serialized_state['self_control_confidence'],
+            "preparedness_confidence":serialized_state['preparedness_confidence'],
+            "information_seeking_confidence": serialized_state['information_seeking_confidence'],
+            "risk_seeking_confidence":serialized_state['risk_seeking_confidence'],
+            "awareness_confidence":serialized_state['awareness_confidence'],
+            "reaction_to_external_events_confidence": serialized_state['reaction_to_external_events_confidence']
         }
 
         rationale={
-            "self_control_rationale  ":  serialized_state['self_control_rationale'],
-            "preparedness_rationale   ": serialized_state['preparedness_rationale'],
-            "information_seeking_rationale ": serialized_state['information_seeking_rationale'],
-            "risk_seeking_rationale    ":serialized_state['risk_seeking_rationale'],
-            "awareness_rationale    ":serialized_state['awareness_rationale'],
-            "reaction_to_external_events_rationale   ": serialized_state['reaction_to_external_events_rationale']
+            "self_control_rationale":  serialized_state['self_control_rationale'],
+            "preparedness_rationale": serialized_state['preparedness_rationale'],
+            "information_seeking_rationale": serialized_state['information_seeking_rationale'],
+            "risk_seeking_rationale":serialized_state['risk_seeking_rationale'],
+            "awareness_rationale":serialized_state['awareness_rationale'],
+            "reaction_to_external_events_rationale": serialized_state['reaction_to_external_events_rationale']
         }
+
+
+        ## Adding Persona label in state
+        avg_score=weighted_average(score,confidence)
+        persona_label=generate_persona_label(avg_score)
+        
+        print("avg_score:", avg_score)
+        print("Persona Label:", persona_label)
+        serialized_state["persona_label"]=persona_label
 
         #  Function for saving data in database
 
@@ -356,12 +481,12 @@ async def chat(request: ChatRequest):
                 parameter_rationale=rationale
             )
         else:
-            weighted_average_score=weighted_average(score,confidence)
             save_persona(
             user_id=user_id,
             session_id=session_id,
+            persona_label=persona_label,
             persona=response_content,
-            avg_score=weighted_average_score,
+            avg_score=avg_score,
             llm_confidence=confidence,
             parameter_score=score,
             parameter_rationale=rationale
@@ -374,6 +499,7 @@ async def chat(request: ChatRequest):
         )
 
     except Exception as e:
+        # print(e)
         raise HTTPException(
             status_code=500, detail=f"Error processing chat: {str(e)}"
         )
@@ -436,13 +562,6 @@ async def get_persona_endpoint(request: StateRequest):
         print("response_content")
         print(response_content)
 
-
-
-        # send_mail(
-        #     to_email="rishukush506@gmail.com", 
-        #     subject="User id for Chatbot Testing", 
-        #     body=user_id,
-        # )
         score={
             "self_control_score"  : current_state['self_control_score'],
             "preparedness_score"  : current_state['preparedness_score'],
@@ -471,10 +590,11 @@ async def get_persona_endpoint(request: StateRequest):
         }
 
         avg_score=weighted_average(score,confidence)
-
+        persona_label=generate_persona_label(avg_score)
         save_persona(
             user_id=user_id,
             session_id=session_id,
+            persona_label=persona_label,
             persona=response_content,
             llm_confidence=confidence,
             parameter_score=score,
@@ -484,13 +604,14 @@ async def get_persona_endpoint(request: StateRequest):
 
         return {
             "response": response_content,
+            "persona_label": persona_label,
             "status": "success"
         }
 
     except Exception as e:
-        print(e)
-        # raise HTTPException(
-        #     status_code=500, detail=f"Error processing persona: {str(e)}")
+        # print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Error processing persona: {str(e)}")
 
 
 @app.get("/health")
