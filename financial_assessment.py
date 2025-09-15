@@ -350,7 +350,7 @@ Be kind and helpful.
 
 Never ask the user to self assess based on any scale. Your only task is to continue the flow of conversation, guiding the flow towards the required trait to assess.
 
-Always ask one question at a time.
+Do not use same questions mentioned in the trait_guidance, but you can rephrased versions of those questions.
 
 {assessment_information}
 
@@ -358,6 +358,7 @@ ONGOING MESSAGE THREAD:
 {messages}
 """
 
+# Always ask one question at a time.
 
 def assessment_conversation_generator(state: AgentState):
     """Generate conversation or option-based questions for trait assessment"""
