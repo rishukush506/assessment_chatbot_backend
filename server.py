@@ -456,18 +456,19 @@ async def chat(request: ChatRequest):
 
         #  Function for saving data in database
 
-        if current_priority!='persona':
-            save_message(
-                user_id=user_id,
-                session_id=session_id,
-                user_res=current_state["messages"][-1].content,
-                ai_res=ai_messages[-1].content,
-                current_priority=current_priority,
-                parameter_score=score,
-                llm_confidence=confidence,
-                parameter_rationale=rationale
-            )
-        else:
+        
+        save_message(
+            user_id=user_id,
+            session_id=session_id,
+            user_res=current_state["messages"][-1].content,
+            ai_res=ai_messages[-1].content,
+            current_priority=current_priority,
+            parameter_score=score,
+            llm_confidence=confidence,
+            parameter_rationale=rationale
+        )
+        
+        if current_priority =='persona':
             save_persona(
                 user_id=user_id,
                 session_id=session_id,
