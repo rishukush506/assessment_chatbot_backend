@@ -467,13 +467,15 @@ async def chat(request: ChatRequest):
             llm_confidence=confidence,
             parameter_rationale=rationale
         )
-        
+
         if current_priority =='persona':
+            persona_summary = serialized_state['persona']
+
             save_persona(
                 user_id=user_id,
                 session_id=session_id,
                 persona_label=persona_label,
-                persona=response_content,
+                persona=persona_summary,
                 avg_score=avg_score,
                 llm_confidence=confidence,
                 parameter_score=score,
