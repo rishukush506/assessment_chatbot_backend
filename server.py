@@ -30,9 +30,11 @@ db = client["chatbot_db"]
 messages = db["messages_user_testing"]
 counters = db["counters_user_testing"]
 persona_collection=db["persona_user_testing"]
+feedback_collection = db["feedback_user_testing"]
 # messages = db["messages"]
 # counters = db["counters"]
 # persona_collection=db["persona"]
+# feedback_collection = db["feedback"]
 
 def generate_user_id():
     counter = counters.find_one_and_update(
@@ -54,6 +56,38 @@ async def start_new_session():
     # sessions[session_id] = []
     print("👉 Frontend reloaded and requested a new session")
     return {"user_id":user_id , "session_id": session_id}
+
+
+class Feedback(BaseModel):
+    responses: dict
+    user_id: str
+    session_id: str
+
+
+#  Saving Feedback in database
+def save_feedback_db(feedback: Feedback):
+    try:
+        feedback_collection.insert_one({
+            "user_id": feedback.user_id,
+            "session_id": feedback.session_id,
+            "responses": feedback.responses,
+            "timestamp": datetime.now(tz=ZoneInfo('Asia/Kolkata')).strftime("%Y-%m-%d %H:%M:%S")
+        })
+        print("Feedback Saved")
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to save feedback in database: {str(e)}")
+
+# Submit feedback endpoint
+@app.post("/feedback")
+async def save_feedback(feedback: Feedback):
+    # For now just print, later save to DB
+    print("User ID:", feedback.user_id)
+    print("Session ID:", feedback.session_id)
+    print("Responses:", feedback.responses)
+    save_feedback_db(feedback)
+    return {"status": "success", "message": "Feedback received"}
  
 
 def save_message(user_id,session_id, user_res, ai_res,current_priority,llm_confidence,parameter_score, parameter_rationale):
