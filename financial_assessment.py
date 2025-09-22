@@ -107,7 +107,7 @@ DEFINITIONS = {
     "awareness": (
         "Financial awareness refers to an individual's understanding of key financial concepts such as saving strategies, risk-return tradeoffs, inflation effects, and investment diversification. "
         "It reflects the extent to which a person is financially literate and can make informed decisions by anticipating outcomes based on available information. "
-        "Assessment involves evaluating knowledge and awareness of core financial principles and the ability to apply them in practical scenarios."
+        "Assessment involves evaluating knowledge and awareness of core financial concepts such as interest, inflation and risk diversification and the ability to apply them in practical scenarios."
         "Elicit response about awareness by asking questions whether and how much they understand about these principles. Understanding on how to invest and where to invest is a good indicator of financial awareness. Try to gauge their understanding on both objective and subjective awareness."
     ),
     "self_control": (
@@ -683,22 +683,24 @@ You will be given:
 
 Your task is to synthesize this information into a **concise, structured financial persona summary** that includes the following sections:
 
-1. **Financial Persona Summary**:  
+1. **Persona Label**: {persona_label} (if "Not Assessed", do not include this line in the output)
+
+2. **Financial Persona Summary**:  
    - Provide a high-level description of the user’s financial thinking style, habits, tendencies, and mindset based on the dialogue so far.  
    - Avoid generic statements—anchor your conclusions in *evidence from the conversation*, including concrete behaviors or attitudes the user expressed.
    
-2. **Strengths**:  
+3. **Strengths**:  
    - Clearly enumerate what financial strengths the user has (e.g., planning, long-term thinking, impulse control, flexibility).
    - Explain *why* these are strengths, backing it with references to the user's statements or behavior patterns.
-   - Do not comment about the risk seeking ability, or reaction to external events as strength or weakness.
+   - Do not comment about the risk seeking ability, or reaction to external events as strength or weakness. 
 
-3. **Weaknesses**:  
+4. **Where you could do better**:  
    - Clearly describe one or more financial blind spots or behavioral weaknesses the user may have.
    - Do not sugarcoat. Use direct language but remain constructive.
    - Justify the weakness using signals from the conversation (e.g., choices, hesitation, contradictions, overconfidence, etc.)
    - Do not comment about the risk seeking ability, or reaction to external events as strength or weakness.
 
-4. **Suggestions for Improvement**:  
+5. **Suggestions for Improvement**:  
    - Give **practical and actionable** recommendations tailored to the user’s weaknesses.
    - These should not be generic tips, but rooted in behavioral finance or psychology, and framed to the user's persona.
    - Include both short-term habits and long-term mindset shifts if applicable.
